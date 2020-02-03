@@ -1,6 +1,7 @@
 # CapstoneGroupCode
 Holds the main MATLAB files for my work with a Mechanical Engineering capstone group in the Fall 2019 Semester
 
+See <a href="https://gajjara.github.io/cleaning_device">my portfolio page</a> on this project.
 
 README for TOI Retainer Data Set
 
