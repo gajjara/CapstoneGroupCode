@@ -1,0 +1,153 @@
+close all;
+
+% Insert file names
+names = ...
+    {'17_dirty_babyfood_low',...
+	'17_dirty_babyfood_high',...
+	'18_dirty_babyfood_low',...
+	'18_dirty_babyfood_high',...
+	'19_dirty_babyfood_low',...
+	'19_dirty_babyfood_high',...
+	'20_dirty_babyfood_low',...
+	'20_dirty_babyfood_high',...
+	'16_dirty_babyfood_low',...
+	'16_dirty_babyfood_high',...
+	'17_cleaned_low',...
+	'17_cleaned_high',...
+	'11_dirty_frosting_low',...
+	'11_dirty_frosting_high',...
+	'12_dirty_frosting_low',...
+	'12_dirty_frosting_high',...
+	'13_dirty_frosting_low',...
+	'13_dirty_frosting_high',...
+	'14_dirty_frosting_low',...
+	'14_dirty_frosting_high',...
+    '15_dirty_frosting_low',...
+    '15_dirty_frosting_high',...
+	'18_cleaned_low',...
+	'18_cleaned_high',...
+	'16_control_low',...
+	'16_control_high',...
+	'19_cleaned_low',...
+	'19_cleaned_high',...
+	'20_cleaned_low',...
+	'20_cleaned_high',...
+	'11_cleaned_low',...
+	'11_cleaned_high',...
+	'12_cleaned_low',...
+	'12_cleaned_high',...
+	'13_cleaned_low',...
+	'13_cleaned_high',...
+	'14_cleaned_low',...
+	'14_cleaned_high',...
+	'15_cleaned_low',...
+	'15_cleaned_high'};
+nsets = length(names);
+for i = 1:nsets
+    setstr =  names{i};
+    namesorfilepaths{1,i}{1} = setstr;
+    namesorfilepaths{1,i}{2} = strcat(setstr, "Amplitude.png");
+    namesorfilepaths{1,i}{3} = strcat(setstr, "Fourier.png");
+    namesorfilepaths{1,i}{4} = strcat(setstr, "PhaseAmplitude.png");
+end
+
+% Filepaths
+matfilepath = '/Volumes/External Hard Drive/OutputData1.mat';
+imagefilepath = '/Users/Anuj/Documents/MATLAB/Lab_NEU/tie_capstone/TOI_Retainer_DataSet_4b/OutputDataSet/'
+
+% Setup output .mat file
+test = 1;
+save(matfilepath, 'test');
+clear test
+
+% Setup output csv file
+fileID = fopen('OutputData.csv', 'w');
+formatspec = '%.10g';
+
+fprintf(fileID, 'Image,');
+fprintf(fileID, 'AmplitudeMean,');
+fprintf(fileID, 'FourierMean,');
+fprintf(fileID, 'PhaseAmpMean\n');
+
+% bounds for color axises
+loweramp = -250;
+upperamp = 500;
+lowerfourier = 0;
+upperfourier = (1e+15)*2.5;
+lowerphaseamp = 0;
+upperphaseamp = upperamp;
+
+% Loop through all data
+counter = 1;
+path = 'InputDataSet/Image';
+format  = '.JPG';
+for i = 1:1:nsets
+    counter = counter + 1;
+    
+    % Acquire files
+    Img1 = imread(strcat(path, string(((3*i)-3)+1), format));
+    Img0 = imread(strcat(path, string(((3*i)-3)+2), format));
+    Img2 = imread(strcat(path, string(((3*i)-3)+3), format));
+    
+    % Calculate values
+    [amplitude, fourier, phaseamp] = tie_my_v2(Img1, Img0, Img2);
+    clear Img1 Img0 Img2
+    
+    % Calculate means and write to text files
+    amplitude_mean = mean2(amplitude);
+    fourier_mean = mean2(fourier(1800:2200, 1800:2200));
+    phaseamp_mean = mean2(phaseamp);
+    fprintf(fileID, strcat(string(namesorfilepaths{1,i}{1}), ','));
+    fprintf(fileID, strcat(formatspec, ','), amplitude_mean);
+    fprintf(fileID, strcat(formatspec, ','), fourier_mean);
+    fprintf(fileID, strcat(formatspec, '\n'), phaseamp_mean);
+    clear amplitude_mean fourier_mean phaseamp_mean
+    %disp(string(namesorfilepaths{1,i}{1}));
+    
+    v1 = genvarname(strcat(namesorfilepaths{1,i}{1}, 'Amplitude'));
+    v2 = genvarname(strcat(namesorfilepaths{1,i}{1}, 'Fourier'));
+    v3 = genvarname(strcat(namesorfilepaths{1,i}{1}, 'Phase Amplitude'));
+    eval(strcat(v1, "= amplitude;"));
+    eval(strcat(v2, "= fourier;"));
+    eval(strcat(v3, "= phaseamp;"));
+    save(matfilepath, v1, v2, v3, '-append');
+    clear(v1); clear(v2); clear(v3);
+    clear v1 v2 v3
+    
+    % Display stuff
+    f=figure('visible', 'off'); imagesc(amplitude); colorbar; caxis([loweramp upperamp]);
+    title(strcat(string(namesorfilepaths{1,i}{1}), ' Amplitude'));
+    saveas(f, ...
+        strcat(imagefilepath, ...
+        string(namesorfilepaths{1,i}{2})), 'png');
+    clear f amplitude
+    close all;
+    
+    f=figure('visible', 'off'); imagesc(abs(fourier)); colorbar; caxis([lowerfourier upperfourier]);
+    xlabel("Spatial Frequency"); ylabel("Spatial Frequency");
+    title(strcat(string(namesorfilepaths{1,i}{1}), ' Fourier'));
+    saveas(f, ...
+        strcat(imagefilepath, ...
+        string(namesorfilepaths{1,i}{3})), 'png');
+    clear f fourier
+    close all;
+    
+    f=figure('visible', 'off'); imagesc(phaseamp); colorbar; caxis([lowerphaseamp upperphaseamp]);
+    title(strcat(string(namesorfilepaths{1,i}{1}), ' Phase and Amplitude'));
+    saveas(f, ...
+        strcat(imagefilepath, ...
+        string(namesorfilepaths{1,i}{4})), 'png');
+    clear f phaseamp
+    close all;
+    
+    disp(strcat(path, string(((3*i)-3)+1)));
+    disp(strcat(path, string(((3*i)-3)+2)));
+    disp(strcat(path, string(((3*i)-3)+3)));
+    
+    % Break if image numbers exceeded
+    if(counter > (3*nsets))
+        break;
+    end
+end
+
+clear all;
